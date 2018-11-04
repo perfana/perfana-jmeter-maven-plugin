@@ -12,6 +12,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.apache.maven.plugin.MojoExecutionException;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -180,34 +181,35 @@ public class PerfanaClient {
                 .get()
                 .build();
 
-        int retries = 0;
+        int retryCount = 0;
         final int MAX_RETRIES = 12;
         final long sleepInMillis = 10000;
         String assertions = null;
 
-        while (retries <= MAX_RETRIES) {
+        boolean assertionsAvailable = false;
+        while (retryCount++ < MAX_RETRIES) {
+            try {
+                Thread.sleep(sleepInMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // ignore
+            }
             try (Response response = client.newCall(request).execute()) {
-
                 ResponseBody responseBody = response.body();
                 if (response.code() == 200) {
                     assertions = responseBody == null ? "null" : responseBody.string();
+                    assertionsAvailable = true;
                     break;
                 } else {
                     String message = responseBody == null ? response.message() : responseBody.string();
-                    logger.warn("failed to retrieve assertions for url [" + url + "] code [" + response.code() + "] retry [" + retries + "/" + MAX_RETRIES + "] " + message);
+                    logger.info(String.format("failed to retrieve assertions for url [%s] code [%d] retry [%d/%d] %s", url, response.code(), retryCount, MAX_RETRIES, message));
                 }
-                try {
-                    Thread.sleep(sleepInMillis);
-                } catch (InterruptedException e) {
-                    // ignore
-                }
-                retries = retries + 1;
             } catch (IOException e) {
                 throw new PerfanaClientException(String.format("Unable to retrieve assertions for url [%s]", url), e);
             }
-            if (retries == MAX_RETRIES) {
-                throw new PerfanaClientException(String.format("Unable to retrieve assertions for url [%s]", url));
-            }
+        }
+        if (!assertionsAvailable) {
+            logger.warn(String.format("Failed to retrieve assertions for url [%s], no more retries left!", url));
+            throw new PerfanaClientException(String.format("Unable to retrieve assertions for url [%s]", url));
         }
         return assertions;
     }
@@ -276,32 +278,32 @@ public class PerfanaClient {
         Boolean requirementsResult = jsonPath.parse(assertions).read("$.requirements.result");
         String requirementsDeeplink = jsonPath.parse(assertions).read("$.requirements.deeplink");
 
-        logger.info("benchmarkBaselineTestRunResult: "  + benchmarkBaselineTestRunResult);
-        logger.info("benchmarkPreviousTestRunResult: " + benchmarkPreviousTestRunResult);
-        logger.info("requirementsResult: " + requirementsResult);
+        logger.info(String.format("benchmarkBaselineTestRunResult: %s", benchmarkBaselineTestRunResult));
+        logger.info(String.format("benchmarkPreviousTestRunResult: %s", benchmarkPreviousTestRunResult));
+        logger.info(String.format("requirementsResult: %s", requirementsResult));
 
-        String assertionText;
+        StringBuilder assertionText = new StringBuilder();
         if (assertions.contains("false")) {
 
-            assertionText = "One or more Perfana assertions are failing: \n";
-            if(requirementsResult != null && !requirementsResult) assertionText += "Requirements failed: " + requirementsDeeplink + "\n";
-            if(benchmarkPreviousTestRunResult != null && !benchmarkPreviousTestRunResult) assertionText += "Benchmark to previous test run failed: " + benchmarkPreviousTestRunDeeplink + "\n";
-            if(benchmarkBaselineTestRunResult != null && !benchmarkBaselineTestRunResult) assertionText += "Benchmark to baseline test run failed: " + benchmarkBaselineTestRunDeeplink;
+            assertionText.append("One or more Perfana assertions are failing: \n");
+            if(requirementsResult != null && !requirementsResult) assertionText.append(String.format("Requirements failed: %s\n", requirementsDeeplink)) ;
+            if(benchmarkPreviousTestRunResult != null && !benchmarkPreviousTestRunResult) assertionText.append(String.format("Benchmark to previous test run failed: %s\n", benchmarkPreviousTestRunDeeplink));
+            if(benchmarkBaselineTestRunResult != null && !benchmarkBaselineTestRunResult) assertionText.append(String.format("Benchmark to baseline test run failed: %s", benchmarkBaselineTestRunDeeplink));
 
-            logger.info("assertionText: " + assertionText);
+            logger.info(String.format("assertionText: %s", assertionText));
 
-            throw new PerfanaClientException(assertionText);
+            throw new PerfanaClientException(assertionText.toString());
         }
         else {
 
-            assertionText = "All Perfana assertions are OK: \n";
-            if(requirementsResult) assertionText += requirementsDeeplink + "\n";
-            if(benchmarkPreviousTestRunResult) assertionText += benchmarkPreviousTestRunDeeplink + "\n";
-            if(benchmarkBaselineTestRunResult) assertionText += benchmarkBaselineTestRunDeeplink;
+            assertionText.append("All Perfana assertions are OK: \n");
+            if(requirementsResult) assertionText.append(requirementsDeeplink).append("\n");
+            if(benchmarkPreviousTestRunResult != null && benchmarkPreviousTestRunResult) assertionText.append(benchmarkPreviousTestRunDeeplink).append("\n");
+            if(benchmarkBaselineTestRunResult != null && benchmarkBaselineTestRunResult) assertionText.append(benchmarkBaselineTestRunDeeplink);
 
-            logger.info(assertionText);
+            logger.info(String.format("assertionText: %s", assertionText));
         }
-        return assertionText;
+        return assertionText.toString();
     }
 
     public static class PerfanaClientException extends Exception {
