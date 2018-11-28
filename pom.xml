@@ -15,7 +15,7 @@
 
     <groupId>io.perfana</groupId>
     <artifactId>perfana-jmeter-maven-plugin</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
 
     <name>Perfana JMeter Maven Plugin</name>
@@ -276,9 +276,9 @@
         </dependency>
         <!-- Perfana dependencies -->
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>3.8.1</version>
+            <groupId>io.perfana</groupId>
+            <artifactId>perfana-java-client</artifactId>
+            <version>1.0.0</version>
         </dependency>
     </dependencies>
 

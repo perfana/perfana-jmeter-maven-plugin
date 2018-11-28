@@ -4,8 +4,9 @@ import com.lazerycode.jmeter.configuration.JMeterArgumentsArray;
 import com.lazerycode.jmeter.configuration.JMeterProcessJVMSettings;
 import com.lazerycode.jmeter.configuration.RemoteArgumentsArrayBuilder;
 import com.lazerycode.jmeter.configuration.RemoteConfiguration;
-import com.lazerycode.jmeter.perfana.PerfanaClient;
 import com.lazerycode.jmeter.utility.UtilityFunctions;
+import io.perfana.client.PerfanaClient;
+import io.perfana.client.PerfanaClientException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -130,7 +131,7 @@ public class TestManager {
 		if (perfanaClient != null) {
             try {
                 perfanaClient.stopSession();
-            } catch (PerfanaClient.PerfanaClientException e) {
+            } catch (PerfanaClientException e) {
                 throw new MojoExecutionException("Perfana assertions check failed.", e);
             }
         }
