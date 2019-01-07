@@ -21,6 +21,7 @@ import org.joda.time.format.DateTimeFormat;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static com.lazerycode.jmeter.utility.UtilityFunctions.isSet;
@@ -290,6 +291,11 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     @Parameter(defaultValue = "")
     protected Properties perfanaVariables;
 
+    /**
+     * Perfana: properties for perfana event implementations
+     */
+    @Parameter
+    private Map<String, Properties> perfanaEventProperties;
 
     //==================================================================================================================
 
@@ -412,7 +418,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
             }
         };
 
-	    final PerfanaClient client = new PerfanaClientBuilder()
+	    final PerfanaClientBuilder builder = new PerfanaClientBuilder()
                 .setApplication(perfanaApplication)
                 .setTestType(perfanaTestType)
                 .setTestEnvironment(perfanaTestEnvironment)
@@ -425,10 +431,15 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .setVariables(perfanaVariables)
                 .setAnnotations(perfanaAnnotations)
                 .setAssertResultsEnabled(perfanaAssertResultsEnabled)
-                .setLogger(logger)
-                .createPerfanaClient();
+                .setLogger(logger);
 
-        return client;
+        if (perfanaEventProperties != null) {
+            perfanaEventProperties.forEach(
+                    (className, props) -> props.forEach(
+                            (name, value) -> builder.addEventProperty(className, (String) name, (String) value)));
+        }
+        
+        return builder.createPerfanaClient();
     }
 
 
