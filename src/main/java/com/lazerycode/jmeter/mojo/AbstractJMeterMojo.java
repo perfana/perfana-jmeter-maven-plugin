@@ -5,7 +5,8 @@ import com.lazerycode.jmeter.configuration.JMeterProcessJVMSettings;
 import com.lazerycode.jmeter.configuration.ProxyConfiguration;
 import com.lazerycode.jmeter.configuration.RemoteConfiguration;
 import com.lazerycode.jmeter.exceptions.IOException;
-import com.lazerycode.jmeter.perfana.PerfanaClient;
+import io.perfana.client.PerfanaClient;
+import io.perfana.client.PerfanaClientBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -20,6 +21,7 @@ import org.joda.time.format.DateTimeFormat;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static com.lazerycode.jmeter.utility.UtilityFunctions.isSet;
@@ -289,6 +291,11 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     @Parameter(defaultValue = "")
     protected Properties perfanaVariables;
 
+    /**
+     * Perfana: properties for perfana event implementations
+     */
+    @Parameter
+    private Map<String, Properties> perfanaEventProperties;
 
     //==================================================================================================================
 
@@ -388,23 +395,8 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
 
 	}
 
-    protected PerfanaClient createPerfanaClient() {
-
-	    PerfanaClient client = new PerfanaClient(
-                perfanaApplication,
-                perfanaTestType,
-                perfanaTestEnvironment,
-                perfanaTestRunId,
-                perfanaCIBuildResultsUrl,
-                perfanaApplicationRelease,
-                perfanaRampupTimeInSeconds,
-                perfanaConstantLoadTimeInSeconds,
-                perfanaUrl,
-                perfanaAnnotations,
-                perfanaVariables,
-                perfanaAssertResultsEnabled);
-
-        client.injectLogger(new PerfanaClient.Logger() {
+    PerfanaClient createPerfanaClient() {
+        final PerfanaClient.Logger logger = new PerfanaClient.Logger() {
             @Override
             public void info(String message) {
                 getLog().info(message);
@@ -424,9 +416,30 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
             public void debug(final String message) {
                 getLog().debug(message);
             }
-        });
+        };
 
-        return client;
+	    final PerfanaClientBuilder builder = new PerfanaClientBuilder()
+                .setApplication(perfanaApplication)
+                .setTestType(perfanaTestType)
+                .setTestEnvironment(perfanaTestEnvironment)
+                .setTestRunId(perfanaTestRunId)
+                .setCIBuildResultsUrl(perfanaCIBuildResultsUrl)
+                .setApplicationRelease(perfanaApplicationRelease)
+                .setRampupTimeInSeconds(perfanaRampupTimeInSeconds)
+                .setConstantLoadTimeInSeconds(perfanaConstantLoadTimeInSeconds)
+                .setPerfanaUrl(perfanaUrl)
+                .setVariables(perfanaVariables)
+                .setAnnotations(perfanaAnnotations)
+                .setAssertResultsEnabled(perfanaAssertResultsEnabled)
+                .setLogger(logger);
+
+        if (perfanaEventProperties != null) {
+            perfanaEventProperties.forEach(
+                    (className, props) -> props.forEach(
+                            (name, value) -> builder.addEventProperty(className, (String) name, (String) value)));
+        }
+        
+        return builder.createPerfanaClient();
     }
 
 

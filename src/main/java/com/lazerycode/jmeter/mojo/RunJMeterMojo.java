@@ -2,8 +2,8 @@ package com.lazerycode.jmeter.mojo;
 
 import com.lazerycode.jmeter.configuration.JMeterArgumentsArray;
 import com.lazerycode.jmeter.json.TestConfig;
-import com.lazerycode.jmeter.perfana.PerfanaClient;
 import com.lazerycode.jmeter.testrunner.TestManager;
+import io.perfana.client.PerfanaClient;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Execute;
