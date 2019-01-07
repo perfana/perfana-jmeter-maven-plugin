@@ -15,11 +15,11 @@
 
     <groupId>io.perfana</groupId>
     <artifactId>perfana-jmeter-maven-plugin</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1</version>
     <packaging>maven-plugin</packaging>
 
     <name>Perfana JMeter Maven Plugin</name>
-    <description>Forked from jmeter-maven-plugin, with perfana integration.</description>
+    <description>Forked from jmeter-maven-plugin, with Perfana integration.</description>
     <inceptionYear>2018</inceptionYear>
     <url>https://perfana.io</url>
 
@@ -181,10 +181,11 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
+
 
     <dependencies>
         <dependency>
@@ -535,11 +536,11 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
-                                <configuration>
-                                    <homedir>${gpg.homedir}</homedir>
-                                    <keyname>${gpg.keyname}</keyname>
-                                    <passphrase>${gpg.passphrase}</passphrase>
-                                </configuration>
+                                <!--<configuration>-->
+                                    <!--<homedir>${gpg.homedir}</homedir>-->
+                                    <!--<keyname>${gpg.keyname}</keyname>-->
+                                    <!--<passphrase>${gpg.passphrase}</passphrase>-->
+                                <!--</configuration>-->
                             </execution>
                         </executions>
                     </plugin>
