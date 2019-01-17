@@ -34,7 +34,7 @@ Basic Usage
 
 Add the plugin to the build section of your pom's project :
 
-```
+```xml
 <plugin>
     <groupId>io.perfana</groupId>
     <artifactId>perfana-jmeter-maven-plugin</artifactId>
@@ -55,6 +55,36 @@ Add the plugin to the build section of your pom's project :
             </goals>
        </execution>
     </executions>
+    <configuration>
+	    <!-- Perfana specific settings (example) -->
+        <perfanaEnabled>true</perfanaEnabled>
+        <perfanaUrl>http://localhost:4000</perfanaUrl>
+        <perfanaAssertResultsEnabled>true</perfanaAssertResultsEnabled>
+        <perfanaApplication>Afterburner</perfanaApplication>
+        <perfanaTestEnvironment>stokpop-local</perfanaTestEnvironment>
+        <perfanaTestRunId>run-2</perfanaTestRunId>
+        <perfanaApplicationRelease>${project.version}</perfanaApplicationRelease>
+        <perfanaTestType>JMETER</perfanaTestType>
+            <scheduleEvents>
+                <scheduleEvent>PT5S|restart|{ server:'myserver' replicas:2 tags: [ 'first', 'second' ] }</scheduleEvent>
+                <scheduleEvent>PT10S|heapdump|durationInMillis=15000</scheduleEvent>
+                <scheduleEvent>PT15S|fail-over|server=myserver.example.com;port=1567</scheduleEvent>
+                <scheduleEvent>PT1M|scale-down|{ replicas:2 }</scheduleEvent>
+            </scheduleEvents>
+            <perfanaEventProperties>
+                <nl.stokpop.perfana.event.StokpopHelloPerfanaEvent>
+                    <myName>myValue</myName>
+                    <myCredentials>SECRET</myCredentials>
+                </nl.stokpop.perfana.event.StokpopHelloPerfanaEvent>
+            </perfanaEventProperties>
+        </configuration>
+        <dependencies>
+            <dependency>
+                <groupId>nl.stokpop</groupId>
+                <artifactId>perfana-hello-world-events</artifactId>
+                <version>1.2.0</version>
+            </dependency>
+        </dependencies>
 </plugin>
 ```
 

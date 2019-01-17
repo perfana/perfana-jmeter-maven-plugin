@@ -288,14 +288,20 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     /**
      * Perfana: test run variables passed via environment variable
      */
-    @Parameter(defaultValue = "")
-    protected Properties perfanaVariables;
+    @Parameter
+    protected Map<String,String> perfanaVariables;
 
     /**
      * Perfana: properties for perfana event implementations
      */
     @Parameter
-    private Map<String, Properties> perfanaEventProperties;
+    protected Map<String, Properties> perfanaEventProperties;
+
+    /**
+     * Perfana: perfana custom event implementations
+     */
+    @Parameter
+    protected List<String> scheduleEvents;
 
     //==================================================================================================================
 
@@ -431,7 +437,13 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .setVariables(perfanaVariables)
                 .setAnnotations(perfanaAnnotations)
                 .setAssertResultsEnabled(perfanaAssertResultsEnabled)
+                .setScheduleEvents(scheduleEvents)
                 .setLogger(logger);
+
+        if (!isEmpty(perfanaTestRunId)) {
+            // otherwise use default with unique id
+            builder.setTestRunId(perfanaTestRunId);
+        }
 
         if (perfanaEventProperties != null) {
             perfanaEventProperties.forEach(
@@ -442,5 +454,8 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
         return builder.createPerfanaClient();
     }
 
-
+    private static boolean isEmpty(String variable) {
+        return variable == null || variable.trim().isEmpty();
+    }
+    
 }
