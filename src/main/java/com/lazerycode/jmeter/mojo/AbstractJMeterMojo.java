@@ -7,6 +7,11 @@ import com.lazerycode.jmeter.configuration.RemoteConfiguration;
 import com.lazerycode.jmeter.exceptions.IOException;
 import io.perfana.client.PerfanaClient;
 import io.perfana.client.PerfanaClientBuilder;
+import io.perfana.client.api.PerfanaClientLogger;
+import io.perfana.client.api.PerfanaConnectionSettings;
+import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
+import io.perfana.client.api.PerfanaTestContext;
+import io.perfana.client.api.PerfanaTestContextBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -240,7 +245,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     /**
      * Perfana: Build results url where to find the results of this load test.
      */
-    @Parameter(defaultValue = "")
+    @Parameter
     protected String perfanaCIBuildResultsUrl;
 
     /**
@@ -282,7 +287,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     /**
      * Perfana: test run annotiations passed via environment variable
      */
-    @Parameter(defaultValue = "")
+    @Parameter
     protected String perfanaAnnotations;
 
     /**
@@ -298,10 +303,10 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     protected Map<String, Properties> perfanaEventProperties;
 
     /**
-     * Perfana: perfana custom event implementations
+     * Perfana: schedule script with events, one event per line, such as: PT1M|scale-down|replicas=2
      */
     @Parameter
-    protected List<String> scheduleEvents;
+    protected String eventScheduleScript;
 
     //==================================================================================================================
 
@@ -402,7 +407,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
 	}
 
     PerfanaClient createPerfanaClient() {
-        final PerfanaClient.Logger logger = new PerfanaClient.Logger() {
+        final PerfanaClientLogger logger = new PerfanaClientLogger() {
             @Override
             public void info(String message) {
                 getLog().info(message);
@@ -424,7 +429,8 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
             }
         };
 
-	    final PerfanaClientBuilder builder = new PerfanaClientBuilder()
+        PerfanaTestContext context = new PerfanaTestContextBuilder()
+                .setTestRunId(perfanaTestRunId)
                 .setApplication(perfanaApplication)
                 .setTestType(perfanaTestType)
                 .setTestEnvironment(perfanaTestEnvironment)
@@ -433,29 +439,28 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .setApplicationRelease(perfanaApplicationRelease)
                 .setRampupTimeInSeconds(perfanaRampupTimeInSeconds)
                 .setConstantLoadTimeInSeconds(perfanaConstantLoadTimeInSeconds)
-                .setPerfanaUrl(perfanaUrl)
                 .setVariables(perfanaVariables)
                 .setAnnotations(perfanaAnnotations)
-                .setAssertResultsEnabled(perfanaAssertResultsEnabled)
-                .setScheduleEvents(scheduleEvents)
-                .setLogger(logger);
+                .build();
 
-        if (!isEmpty(perfanaTestRunId)) {
-            // otherwise use default with unique id
-            builder.setTestRunId(perfanaTestRunId);
-        }
+        PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
+                .setPerfanaUrl(perfanaUrl)
+                .build();
+
+        PerfanaClientBuilder clientBuilder = new PerfanaClientBuilder()
+                .setPerfanaTestContext(context)
+                .setPerfanaConnectionSettings(settings)
+                .setAssertResultsEnabled(perfanaAssertResultsEnabled)
+                .setScheduleEvents(eventScheduleScript)
+                .setLogger(logger);
 
         if (perfanaEventProperties != null) {
             perfanaEventProperties.forEach(
                     (className, props) -> props.forEach(
-                            (name, value) -> builder.addEventProperty(className, (String) name, (String) value)));
+                            (name, value) -> clientBuilder.addEventProperty(className, (String) name, (String) value)));
         }
         
-        return builder.createPerfanaClient();
-    }
-
-    private static boolean isEmpty(String variable) {
-        return variable == null || variable.trim().isEmpty();
+        return clientBuilder.build();
     }
     
 }
