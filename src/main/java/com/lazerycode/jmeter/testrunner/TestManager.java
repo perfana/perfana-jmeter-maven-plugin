@@ -6,7 +6,8 @@ import com.lazerycode.jmeter.configuration.RemoteArgumentsArrayBuilder;
 import com.lazerycode.jmeter.configuration.RemoteConfiguration;
 import com.lazerycode.jmeter.utility.UtilityFunctions;
 import io.perfana.client.PerfanaClient;
-import io.perfana.client.PerfanaClientException;
+import io.perfana.client.exception.PerfanaAssertionsAreFalse;
+import io.perfana.client.exception.PerfanaClientException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -96,47 +97,62 @@ public class TestManager {
 	 */
 	public List<String> executeTests() throws MojoExecutionException {
 
+	    boolean abortPerfana = false;
+
 		if (perfanaClient != null) {
 		    perfanaClient.startSession();
         }
 
-        JMeterArgumentsArray thisTestArgs = baseTestArgs;
-		List<String> tests = generateTestList();
-		List<String> results = new ArrayList<>();
-		DateTimeFormatter sdf = new DateTimeFormatterBuilder().appendPattern(REPORT_DIR_DATE_FORMAT).toFormatter();
-		for (String file : tests) {
-		    if(generateReports) {
-		        thisTestArgs.setReportsDirectory(
-		                reportDirectory+File.separator+ 
-		            FilenameUtils.getBaseName(file)+"_"+
-		            sdf.print(new DateTime()));
-		    }
-			if (remoteServerConfiguration != null) {
-				if ((remoteServerConfiguration.isStartServersBeforeTests() && tests.get(0).equals(file)) || remoteServerConfiguration.isStartAndStopServersForEachTest()) {
-					thisTestArgs.setRemoteStart();
-					thisTestArgs.setRemoteStartServerList(remoteServerConfiguration.getServerList());
-				}
-				if ((remoteServerConfiguration.isStopServersAfterTests() && tests.get(tests.size() - 1).equals(file)) || remoteServerConfiguration.isStartAndStopServersForEachTest()) {
-					thisTestArgs.setRemoteStop();
-				}
-			}
-			results.add(executeSingleTest(new File(testFilesDirectory, file), thisTestArgs));
-			try {
-				TimeUnit.SECONDS.sleep(postTestPauseInSeconds);
-			} catch (InterruptedException ignored) {
-			    Thread.currentThread().interrupt();
-			}
-		}
+        List<String> results = new ArrayList<>();
+        try {
+            JMeterArgumentsArray thisTestArgs = baseTestArgs;
+            List<String> tests = generateTestList();
+            DateTimeFormatter sdf = new DateTimeFormatterBuilder().appendPattern(REPORT_DIR_DATE_FORMAT).toFormatter();
+            for (String file : tests) {
+                if (generateReports) {
+                    thisTestArgs.setReportsDirectory(
+                            reportDirectory + File.separator +
+                                    FilenameUtils.getBaseName(file) + "_" +
+                                    sdf.print(new DateTime()));
+                }
+                if (remoteServerConfiguration != null) {
+                    if ((remoteServerConfiguration.isStartServersBeforeTests() && tests.get(0).equals(file)) || remoteServerConfiguration.isStartAndStopServersForEachTest()) {
+                        thisTestArgs.setRemoteStart();
+                        thisTestArgs.setRemoteStartServerList(remoteServerConfiguration.getServerList());
+                    }
+                    if ((remoteServerConfiguration.isStopServersAfterTests() && tests.get(tests.size() - 1).equals(file)) || remoteServerConfiguration.isStartAndStopServersForEachTest()) {
+                        thisTestArgs.setRemoteStop();
+                    }
+                }
+                results.add(executeSingleTest(new File(testFilesDirectory, file), thisTestArgs));
+                try {
+                    TimeUnit.SECONDS.sleep(postTestPauseInSeconds);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        } catch(Throwable e) {
+            abortPerfana = true;
+            throw e;
+        } finally {
+            if (perfanaClient != null) {
+                if (abortPerfana) {
+                    perfanaClient.abortSession();
+                }
+            }
+        }
 
-		if (perfanaClient != null) {
+        if (perfanaClient != null) {
             try {
                 perfanaClient.stopSession();
             } catch (PerfanaClientException e) {
                 throw new MojoExecutionException("Perfana assertions check failed.", e);
+            } catch (PerfanaAssertionsAreFalse perfanaAssertionsAreFalse) {
+                throw new MojoExecutionException("Perfana assertions checks are false.", perfanaAssertionsAreFalse);
             }
         }
 
-		return results;
+        return results;
 	}
 
 	//=============================================================================================
@@ -173,13 +189,13 @@ public class TestManager {
 		try {
 			final Process process = jmeterProcessBuilder.startProcess();
 
-			Runtime.getRuntime().addShutdownHook(new Thread() {
-				@Override
-				public void run() {
-					LOGGER.info("Shutdown detected, destroying JMeter process...");
-					process.destroy();
-				}
-			});
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                LOGGER.info("Shutdown detected, destroying JMeter process...");
+                if (perfanaClient != null && !perfanaClient.isSessionStopped()) {
+                    perfanaClient.abortSession();
+                }
+                process.destroy();
+            }));
 
 			try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
 			        BufferedReader br = new BufferedReader(isr)) {
