@@ -15,7 +15,7 @@
 
     <groupId>io.perfana</groupId>
     <artifactId>perfana-jmeter-maven-plugin</artifactId>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.2.2</version>
     <packaging>maven-plugin</packaging>
 
     <name>Perfana JMeter Maven Plugin</name>
