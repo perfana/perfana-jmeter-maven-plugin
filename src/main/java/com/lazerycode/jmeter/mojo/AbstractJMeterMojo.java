@@ -446,6 +446,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .setConstantLoadTimeInSeconds(perfanaConstantLoadTimeInSeconds)
                 .setVariables(perfanaVariables)
                 .setAnnotations(perfanaAnnotations)
+                .setLogger(logger)
                 .build();
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -456,8 +457,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .setPerfanaTestContext(context)
                 .setPerfanaConnectionSettings(settings)
                 .setAssertResultsEnabled(perfanaAssertResultsEnabled)
-                .setScheduleEvents(eventScheduleScript)
-                .setLogger(logger);
+                .setCustomEvents(eventScheduleScript);
 
         if (perfanaEventProperties != null) {
             perfanaEventProperties.forEach(
