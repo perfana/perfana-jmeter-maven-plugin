@@ -10,8 +10,8 @@ import io.perfana.client.PerfanaClientBuilder;
 import io.perfana.client.api.PerfanaClientLogger;
 import io.perfana.client.api.PerfanaConnectionSettings;
 import io.perfana.client.api.PerfanaConnectionSettingsBuilder;
-import io.perfana.client.api.PerfanaTestContext;
-import io.perfana.client.api.PerfanaTestContextBuilder;
+import io.perfana.client.api.TestContext;
+import io.perfana.client.api.TestContextBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -434,7 +434,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
             }
         };
 
-        PerfanaTestContext context = new PerfanaTestContextBuilder()
+        TestContext context = new TestContextBuilder()
                 .setTestRunId(perfanaTestRunId)
                 .setApplication(perfanaApplication)
                 .setTestType(perfanaTestType)
@@ -446,7 +446,6 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .setConstantLoadTimeInSeconds(perfanaConstantLoadTimeInSeconds)
                 .setVariables(perfanaVariables)
                 .setAnnotations(perfanaAnnotations)
-                .setLogger(logger)
                 .build();
 
         PerfanaConnectionSettings settings = new PerfanaConnectionSettingsBuilder()
@@ -454,7 +453,8 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .build();
 
         PerfanaClientBuilder clientBuilder = new PerfanaClientBuilder()
-                .setPerfanaTestContext(context)
+                .setLogger(logger)
+                .setTestContext(context)
                 .setPerfanaConnectionSettings(settings)
                 .setAssertResultsEnabled(perfanaAssertResultsEnabled)
                 .setCustomEvents(eventScheduleScript);
