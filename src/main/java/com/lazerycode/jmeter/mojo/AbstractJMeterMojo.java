@@ -294,7 +294,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
      * Perfana: test run variables passed via environment variable
      */
     @Parameter
-    protected Map<String,String> perfanaVariables;
+    protected Properties perfanaVariables;
 
     /**
      * Perfana: properties for perfana event implementations
