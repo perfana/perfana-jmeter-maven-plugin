@@ -297,10 +297,10 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     protected Properties perfanaVariables;
 
 	/**
-	 * Perfana: test run tags via environment variable
+	 * Perfana: test run comma separated tags via environment variable
 	 */
 	@Parameter
-	protected List<String> tags;
+	protected String tags;
 
     /**
      * Perfana: properties for perfana event implementations
