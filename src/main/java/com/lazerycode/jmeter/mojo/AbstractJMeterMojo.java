@@ -296,6 +296,12 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
     @Parameter
     protected Properties perfanaVariables;
 
+	/**
+	 * Perfana: test run tags via environment variable
+	 */
+	@Parameter
+	protected List<String> tags;
+
     /**
      * Perfana: properties for perfana event implementations
      */
@@ -445,6 +451,7 @@ public abstract class AbstractJMeterMojo extends AbstractMojo {
                 .setRampupTimeInSeconds(perfanaRampupTimeInSeconds)
                 .setConstantLoadTimeInSeconds(perfanaConstantLoadTimeInSeconds)
                 .setVariables(perfanaVariables)
+				.setTags(tags)
                 .setAnnotations(perfanaAnnotations)
                 .build();
 

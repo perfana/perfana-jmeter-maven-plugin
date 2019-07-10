@@ -17,16 +17,18 @@ import org.junit.Test;
 
 public class TestConfigTest {
 
-	private String testConfigFile = "/config.json";
-	private String tempdir = System.getProperty("java.io.tmpdir");
+	private final String testConfigFile = "/config.json";
+	private final String tempdir = System.getProperty("java.io.tmpdir");
+	private final String newline = System.getProperty("line.separator");
 
 	@Test
 	public void createConfigFromResourceFile() throws MojoExecutionException, URISyntaxException {
 		URL configFile = this.getClass().getResource(testConfigFile);
 		File testConfigJSON = new File(configFile.toURI());
 		TestConfig testConfig = new TestConfig(testConfigJSON);
-		assertThat(testConfig.getFullConfig(), is(equalTo(String.format("{%1$s  \"resultFilesLocations\" : [],%1$s  \"resultsOutputIsCSVFormat\" : false,%1$s  \"someOtherElement\": \"foo\"%1$s}", 
-				'\n'))));
+
+		assertThat(testConfig.getFullConfig(), is(equalTo(String.format("{%1$s  \"resultFilesLocations\" : [],%1$s  \"resultsOutputIsCSVFormat\" : false,%1$s  \"someOtherElement\": \"foo\"%1$s}",
+				newline))));
 	}
 
 	@Test(expected = MojoExecutionException.class)
@@ -40,7 +42,7 @@ public class TestConfigTest {
 		InputStream configFile = this.getClass().getResourceAsStream(testConfigFile);
 		TestConfig testConfig = new TestConfig(configFile);
 		assertThat(testConfig.getFullConfig(), is(equalTo(String.format("{%1$s  \"resultFilesLocations\" : [],%1$s  \"resultsOutputIsCSVFormat\" : false,%1$s  \"someOtherElement\": \"foo\"%1$s}", 
-				'\n'))));
+				newline))));
 	}
 
 	@Test(expected = MojoExecutionException.class)
